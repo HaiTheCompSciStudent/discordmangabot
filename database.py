@@ -8,7 +8,7 @@ import os
 class Database:
 
     def __init__(self, db_path):
-        self.client = MongoClient(db_path)
+        self.client = MongoClient(MONGODB_URI)
         self.database = self.client["discord-bot"]
         self.guilds = self.database["guilds"]
         self.manga = self.database["manga"]

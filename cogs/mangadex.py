@@ -1,25 +1,20 @@
-import aiohttp
-from aiohttp import ClientSession
-from bs4 import BeautifulSoup
 import asyncio
-
 import discord
+import math
+import os
+import time
 from discord.ext import commands, tasks
 
-from models.mangadex.manga import Manga
-from models.mangadex.chapter import Chapter
-from models.discord.guild import Guild
-
-from database import database
-
-import time
-import formatter
-import math
-
-from cogs.exceptions import *
-
+import aiohttp
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import os
+
+import formatter
+from cogs.exceptions import *
+from database import database
+from models.discord.guild import Guild
+from models.mangadex.chapter import Chapter
+from models.mangadex.manga import Manga
 
 # TODO: add a config file
 load_dotenv()
