@@ -291,21 +291,22 @@ class Mangadex(commands.Cog, name="Mangadex"):
             raise UsageError
 
         results = await self.search(regex)
-        results = [(i + 1, f"{manga.title} {manga.id}") for i, manga in enumerate(results)]
-        fmt_manga_list = formatter.prettify_list(results)
+        length = len(results)
+        fmt_manga_list = [(i + 1, f"{manga.title} {manga.id}") for i, manga in enumerate(results)]
+        fmt_manga_list = formatter.prettify_list(fmt_manga_list)
         fmt_manga_list = formatter.code_blockify(content=fmt_manga_list)
 
         if not results:
             raise IndexbotExceptions(f"No results found!")
 
-        embed = discord.Embed(title=f"**Showing [{len(results)}] results**", color=0x00aaff)
+        embed = discord.Embed(title=f"**Showing [{length}] results**", color=0x00aaff)
         embed.add_field(name="**Input `1~5` to select a manga to add, `x` to cancel.**",
                         value=fmt_manga_list)
         prompt = await ctx.channel.send(embed=embed)
         print(prompt.id)
 
         def check(m):
-            crr_choice = [str(i + 1) for i in range(len(results))]
+            crr_choice = [str(i + 1) for i in range(length)]
             crr_choice.append("x")
 
             return m.author == ctx.author \
@@ -347,7 +348,7 @@ class Mangadex(commands.Cog, name="Mangadex"):
         success_msg = f"☑ **[{ctx.channel}]** has been designated as the update channel!"
         await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
 
-    @commands.command(name="info", Usage="[Manga ID]")
+    @commands.command(name="info", usage="[Manga ID]")
     async def info(self, ctx, manga_id):
         guild = database.get_guild(ctx.guild.id)
         manga = database.get_manga(manga_id)
