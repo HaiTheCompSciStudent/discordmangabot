@@ -22,6 +22,35 @@ def pretty_list_menu(start_pos, manga_list, page=1, total_page=1):
     return content
 
 
+def code_blockify(title='', content='', footer=''):
+    """Creates a code block through discord markdown"""
+    code_block = f"```py\n" \
+                 f"{title}\n" \
+                 f" \n" \
+                 f"{content}\n" \
+                 f" \n" \
+                 f"{footer}```"
+    return code_block
+
+
+def prettify_list(element_list):
+    """Takes in a list of tuple containing (number, element_name) and formats them into '[number] : element_name"""
+    pretty_list = []
+    for element in element_list:
+        number, element_name = element
+        pretty_list.append(f" [{number}] : {element_name}")
+    return "\n".join(pretty_list)
+
+
+def prettify_bulk_list(element_list):
+    """Takes a list of elements and formats them into '`element`, '"""
+    pretty_bulk_list = []
+    for element in element_list:
+        pretty_bulk_list.append(f"`{element}`")
+    return ", ".join(pretty_bulk_list)
+
+
+
 def pretty_embed(content):
     """pretty useless imo"""
     embed = Embed(description=content, color=0x00aaff)

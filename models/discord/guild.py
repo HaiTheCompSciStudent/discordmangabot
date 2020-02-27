@@ -46,7 +46,8 @@ class Guild:
         else:
             raise EntryError("There is no such subscription!")
 
-    def get_subscription_ids(self):
+    @property
+    def subscription_ids(self):
         id_list = [sub.manga_id for sub in self.subscriptions]
         return id_list
 

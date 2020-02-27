@@ -251,32 +251,32 @@ class Mangadex(commands.Cog, name="Mangadex"):
     async def list_manga(self, ctx, page: int = 1):
 
         guild = database.get_guild(ctx.guild.id)
-        id_list = guild.get_subscription_ids()
+        m_id_list = guild.subscription_ids
+        length = len(m_id_list)
 
-        if not id_list:
+        if not m_id_list:
             raise MangadexError(f"❌ **Error:** **[`{ctx.guild}`]** doesn't have any subscriptions!")
 
-        length = len(id_list)
-        total_page = math.ceil(len(id_list) / 9)
+        total_page = math.ceil(length / 9)
 
         if page < 0 or page > total_page:
             raise UsageError(f"❌ **Error:** **[`{page}`]** is not a valid page number! [`{total_page}`] total pages.")
 
-        id_list = id_list[(page - 1) * 9:]
-        manga_list = []
+        m_id_list = m_id_list[(page - 1) * 9:]
 
-        for i, manga_id in enumerate(id_list):
-            manga_list.append(database.get_manga(manga_id))
+        manga_list = []
+        for i, manga_id in enumerate(m_id_list):
+            i = i + ((page - 1) * 9) + 1
+            manga = database.get_manga(manga_id)
+            manga_list.append((i, f"{manga.title} {manga_id}"))
             if i == 8:
                 break
 
-        embed = discord.Embed(title=ctx.guild.name, color=0x00aaff)
-        embed.add_field(name=f"**Tracking [{length}] manga.**", value=formatter.pretty_list_menu(
-            (page - 1) * 9,
-            manga_list,
-            page,
-            total_page
-        ))
+        fmt_manga_list = formatter.prettify_list(manga_list)
+        fmt_manga_list = formatter.code_blockify(content=fmt_manga_list, footer=f"Page {page} of {total_page}")
+
+        embed = discord.Embed(title=ctx.guild, color=0x00aaff)
+        embed.add_field(name=f"**Tracking [{length}] manga**", value=fmt_manga_list)
 
         await ctx.channel.send(embed=embed)
 
@@ -291,13 +291,16 @@ class Mangadex(commands.Cog, name="Mangadex"):
             raise UsageError
 
         results = await self.search(regex)
+        results = [(i + 1, f"{manga.title} {manga.id}") for i, manga in enumerate(results)]
+        fmt_manga_list = formatter.prettify_list(results)
+        fmt_manga_list = formatter.code_blockify(content=fmt_manga_list)
 
         if not results:
             raise IndexbotExceptions(f"No results found!")
 
         embed = discord.Embed(title=f"**Showing [{len(results)}] results**", color=0x00aaff)
         embed.add_field(name="**Input `1~5` to select a manga to add, `x` to cancel.**",
-                        value=formatter.pretty_list_menu(0, results, 1, 1))
+                        value=fmt_manga_list)
         prompt = await ctx.channel.send(embed=embed)
         print(prompt.id)
 
@@ -373,6 +376,7 @@ class Mangadex(commands.Cog, name="Mangadex"):
 
     @tasks.loop(minutes=20)
     async def manga_update_task(self):
+        return
         # TODO: CLEAN UP
         print("Starting update loop!")
         current_time = time.time()
@@ -407,8 +411,19 @@ class Mangadex(commands.Cog, name="Mangadex"):
     async def bfr_update(self):
         await self.bot.wait_until_ready()
 
+    @tasks.loop(minutes=60)
+    async def auth_task(self):
+        self.session = await self.login(USERNAME, PASSWORD)
+        if not await self.search("komi"):
+            self.is_auth = False
+        else:
+            self.is_auth = True
+
 def setup(bot):
-    # TODO: Add checks if the session is authenticated or not
+    # TODO: do the auth thing properly
     loop = asyncio.get_event_loop()
     session = loop.run_until_complete(Mangadex.login(USERNAME, PASSWORD))
-    bot.add_cog(Mangadex(bot, session, True))
+    cog = Mangadex(bot, session, True)
+    if not loop.run_until_complete(cog.search("komi")):
+        cog.is_auth = False
+    bot.add_cog(cog)
