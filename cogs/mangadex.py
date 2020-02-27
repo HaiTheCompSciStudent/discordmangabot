@@ -376,7 +376,6 @@ class Mangadex(commands.Cog, name="Mangadex"):
 
     @tasks.loop(minutes=20)
     async def manga_update_task(self):
-        return
         # TODO: CLEAN UP
         print("Starting update loop!")
         current_time = time.time()
