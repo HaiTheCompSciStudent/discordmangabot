@@ -3,9 +3,7 @@ import asyncio
 from cogs.exceptions import *
 from models.mangadex.chapter import Chapter
 import time
+import requests
 
-
-d = {
-    "help": "2",
-    "res": "2"
-}
+resp = requests.get("https://mangadex.org/api/manga/39")
+print(resp.text)

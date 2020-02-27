@@ -110,6 +110,35 @@ class Mangadex(commands.Cog, name="Mangadex"):
                         break
             return fetched_chapters
 
+    async def fetch_latest_chapters(self, manga_id, max_results=1, lang_code="gb"):
+        url = f"https://mangadex.org/api/manga/{manga_id}"
+        try:
+            data = await self.fetch_json(url)
+            title = data["manga"]["title"]
+            chapters = data["chapter"]
+        except aiohttp.ClientResponseError as err:
+            if err.status == 404:
+                raise MangadexError(f"❌ **Error:** **[`{manga_id}`]** isn't a valid Manga ID.")
+            else:
+                raise MangadexError(f"❌ **Error:"
+                                    f"** **HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
+        except KeyError:
+            raise MangadexError(f"{title} doesn't have any chapters!")
+        else:
+            fetched_chapters = []
+            counter = 0
+            for chapter_id in chapters:
+                chapter = chapters[chapter_id]
+                if chapter["lang_code"] == lang_code:
+                    fetched_chapters.append(Chapter(chapter_id).populate(chapter))
+                    counter += 1
+                else:
+                    continue
+                if counter == max_results:
+                    break
+
+            return fetched_chapters
+
     async def search(self, title, max_results=5):
         url = f"https://mangadex.org/search?title={title}"
         print(url)
@@ -315,6 +344,33 @@ class Mangadex(commands.Cog, name="Mangadex"):
         success_msg = f"☑ **[{ctx.channel}]** has been designated as the update channel!"
         await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
 
+    @commands.command(name="info", Usage="[Manga ID]")
+    async def info(self, ctx, manga_id):
+        guild = database.get_guild(ctx.guild.id)
+        manga = database.get_manga(manga_id)
+
+        if not manga:
+            manga = await self.fetch_manga(manga_id)
+            database.insert_manga(manga)
+
+        if not guild.check_subscription(manga_id):
+            raise IndexbotExceptions(f"❌ **Error:** **[{manga.title}]** is not on the subscription list!")
+
+        subscription = guild.get_subscription(manga_id)
+        subscribers = [self.bot.get_user(sub) for sub in subscription.subscribers]
+
+        embed = discord.Embed(color=0x00aaff)
+        embed.set_author(name=f"Here is all the info about [{manga.title}]")
+        embed.add_field(name=f"{'subscribers'.upper()}", value=", ".join([f"**`{sub}`**" for sub in subscribers]))
+
+        await ctx.channel.send(embed=embed)
+
+    @commands.command(name="latestchap")
+    async def latest_chap(self, ctx, manga_id, lang_code="gb"):
+        chapters = await self.fetch_latest_chapters(manga_id, lang_code=lang_code)
+        chapter_links = "\n".join([f"https://mangadex.org/chapter/{chapter.id}" for chapter in chapters])
+        await ctx.channel.send(chapter_links)
+
     @tasks.loop(minutes=20)
     async def manga_update_task(self):
         # TODO: CLEAN UP
@@ -340,7 +396,8 @@ class Mangadex(commands.Cog, name="Mangadex"):
 
                     if chapter_links:
                         notified_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
-                        chapter_links = "\n".join([chapter.url for chapter in manga_pool[subscription.manga_id]])
+                        chapter_links = "\n".join([f"https://mangadex.org/chapter/{chapter.id}" for chapter
+                                                   in manga_pool[subscription.manga_id]])
                         await channel.send(notified_members + "\n" + chapter_links)
 
         print(manga_pool)

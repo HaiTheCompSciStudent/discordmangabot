@@ -1,7 +1,7 @@
 from discord.ext import commands
 from database import database
 import formatter
-
+from cogs.exceptions import *
 
 def prefix_callable(bot, m):
     guild = database.get_guild(m.guild.id)
@@ -45,7 +45,16 @@ class General(commands.Cog, name="General"):
                             value=f"**Use `{prefix}help <Command>` for more information about the command.**\n",
                             inline=False)
             await ctx.channel.send(embed=embed)
+        if cmd:
+            cmds = self.bot.all_commands
+            print(cmds)
+            try:
+                cmd = cmds[cmd]
+            except KeyError:
+                raise UsageError
 
+            usage_msg = f"**Usage:** **`{get_prefix(ctx.guild.id)}{cmd.name} {cmd.usage}`**"
+            await ctx.channel.send(embed=formatter.pretty_embed(usage_msg))
 
 def setup(bot):
     bot.add_cog(General(bot))
