@@ -275,7 +275,7 @@ class Mangadex(commands.Cog, name="Mangadex"):
         fmt_manga_list = formatter.prettify_list(manga_list)
         fmt_manga_list = formatter.code_blockify(content=fmt_manga_list, footer=f"Page {page} of {total_page}")
 
-        embed = discord.Embed(title=ctx.guild, color=0x00aaff)
+        embed = discord.Embed(title=ctx.guild.name, color=0x00aaff)
         embed.add_field(name=f"**Tracking [{length}] manga**", value=fmt_manga_list)
 
         await ctx.channel.send(embed=embed)
