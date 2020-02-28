@@ -31,6 +31,7 @@ class Mangadex(commands.Cog, name="Mangadex"):
         self.session = session
         self.is_auth = is_auth
         self.manga_update_task.start()
+        self.auth_task.start()
 
     @staticmethod
     async def login(username, password):
@@ -340,7 +341,7 @@ class Mangadex(commands.Cog, name="Mangadex"):
             success_msg = f"☑ **[{manga.title}]** has successfully been added to the subscription list!"
             await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
 
-    @commands.command(name="here")
+    @commands.command(name="here", usage="")
     async def here(self, ctx):
         guild = database.get_guild(ctx.guild.id)
         guild.set_channel(ctx.channel.id)
@@ -369,7 +370,7 @@ class Mangadex(commands.Cog, name="Mangadex"):
 
         await ctx.channel.send(embed=embed)
 
-    @commands.command(name="latestchap")
+    @commands.command(name="latestchap", usage="[Manga ID]")
     async def latest_chap(self, ctx, manga_id, lang_code="gb"):
         chapters = await self.fetch_latest_chapters(manga_id, lang_code=lang_code)
         chapter_links = "\n".join([f"https://mangadex.org/chapter/{chapter.id}" for chapter in chapters])
@@ -418,6 +419,10 @@ class Mangadex(commands.Cog, name="Mangadex"):
             self.is_auth = False
         else:
             self.is_auth = True
+
+    @auth_task.before_loop
+    async def bfr_auth(self):
+        await asyncio.sleep(60*60)
 
 def setup(bot):
     # TODO: do the auth thing properly
