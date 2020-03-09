@@ -384,20 +384,24 @@ class Mangadex(commands.Cog):
         current_time = time.time()
         fetched_chapter_pool = {}
         for guild in database.guilds:
-            channel = self.bot.get_channel(guild.channel)
-            if channel is not None:
-                for manga_id in guild.id_list:
-                    subscription = guild.get_subscription(manga_id)
-                    try:
-                        fetched_chapters = fetched_chapter_pool[manga_id]
-                    except KeyError:
-                        fetched_chapter_pool[manga_id] = await self.fetch_chapters(manga_id, UPDATE_INTERVAL,
-                                                                                   current_time)
-                        fetched_chapters = fetched_chapter_pool[manga_id]
-                    ping_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
-                    fetched_chapter_links = "\n".join([chapter.url for chapter in fetched_chapters])
-                    if fetched_chapter_links:
-                        await channel.send("\n".join([ping_members, fetched_chapter_links]))
+            try:
+                channel = self.bot.get_channel(guild.channel)
+                if channel is not None:
+                    for manga_id in guild.id_list:
+                        subscription = guild.get_subscription(manga_id)
+                        try:
+                            fetched_chapters = fetched_chapter_pool[manga_id]
+                        except KeyError:
+                            fetched_chapter_pool[manga_id] = await self.fetch_chapters(manga_id, UPDATE_INTERVAL,
+                                                                                       current_time)
+                            fetched_chapters = fetched_chapter_pool[manga_id]
+                        ping_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
+                        fetched_chapter_links = "\n".join([chapter.url for chapter in fetched_chapters])
+                        if fetched_chapter_links:
+                            # await channel.send("\n".join([ping_members, fetched_chapter_links]))
+                            pass
+            except Exception as err:
+                print(err)
         print(f"{len(fetched_chapter_pool)} tracked, update loop ended")
 
     @_manga_update_task.before_loop
