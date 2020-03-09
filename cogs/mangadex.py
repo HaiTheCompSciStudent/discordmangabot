@@ -398,8 +398,8 @@ class Mangadex(commands.Cog):
                         ping_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
                         fetched_chapter_links = "\n".join([chapter.url for chapter in fetched_chapters])
                         if fetched_chapter_links:
-                            # await channel.send("\n".join([ping_members, fetched_chapter_links]))
-                            pass
+                            await channel.send("\n".join([ping_members, fetched_chapter_links]))
+
             except Exception as err:
                 print(err)
         print(f"{len(fetched_chapter_pool)} tracked, update loop ended")
