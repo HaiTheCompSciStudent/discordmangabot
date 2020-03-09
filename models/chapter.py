@@ -18,10 +18,21 @@ class Chapter:
         self.page_array = None
         self.long_strip = None
 
-    def populate(self, data):
-        for attr, value in vars(self).items():
-            try:
-                setattr(self, attr, data[attr])
-            except KeyError:
-                continue
-        return self
+    @classmethod
+    def populate(cls, data):
+        chapter = cls(data["id"])
+        for key, value in data.items():
+            setattr(chapter, key, value)
+        return chapter
+
+    @property
+    def serialized(self):
+        return self.__dict__
+
+    @property
+    def url(self):
+        return f"https://mangadex.org/chapter/{self.id}"
+
+    @property
+    def api_url(self):
+        return f"https://mangadex.org/api/chapter/{self.id}"

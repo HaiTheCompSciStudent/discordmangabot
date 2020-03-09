@@ -1,50 +1,41 @@
 from pymongo import MongoClient
-from models.discord.guild import Guild
-from models.mangadex.manga import Manga
+from config import MONGO_URI
 
-from dotenv import load_dotenv
-import os
+from models.guild import Guild
+from models.manga import Manga
+
 
 class Database:
+    """Represents a database storing guild and manga information using MongoDB."""
 
-    def __init__(self, db_path):
-        self.client = MongoClient(db_path)
-        self.database = self.client["discord-bot"]
-        self.guilds = self.database["guilds"]
-        self.manga = self.database["manga"]
-
-    def update_guild(self, guild_id, guild_data):
-        self.guilds.find_one_and_replace({"guild_id": guild_id}, guild_data)
-
-    def get_guild(self, guild_id):
-        json_data = self.guilds.find_one({"guild_id": guild_id})
-        if json_data is None:
-            self.insert_guild(guild_id)
-            return Guild(guild_id)
-        else:
-            return Guild.from_json(json_data)
-
-    def insert_guild(self, guild_id):
-        self.guilds.insert_one(Guild(guild_id).serialize())
-
-    def remove_guild(self, guild_id):
-        self.guilds.find_one_and_delete({"guild_id": guild_id})
-
-    def get_manga(self, manga_id):
-        data = self.manga.find_one({"id": manga_id})
-        if not data:
-            return None
-        else:
-            return Manga(manga_id).populate(data)
-
-    def insert_manga(self, manga):
-        self.manga.insert_one(manga.serialize())
+    def __init__(self):
+        self._client = MongoClient(MONGO_URI)
+        self._database = self._client["discord-bot"]
+        self._guilds = self._database["guilds"]
+        self._manga = self._database["manga"]
 
     @property
-    def guild_objs(self):
-        return self.guilds.find({})
+    def guilds(self):
+        return list(map(Guild.deserialize, self._guilds.find({})))
 
-load_dotenv()
+    def update_guild(self, guild):
+        self._guilds.find_one_and_replace({"guild_id": guild.id}, guild.serialized)
 
-DB_PATH = os.getenv("DB_PATH")
-database = Database(DB_PATH)
+    def add_guild(self, guild_id):
+        self._guilds.insert(Guild(guild_id).serialized)
+
+    def remove_guild(self, guild_id):
+        self._guilds.find_one_and_delete({"guild_id": guild_id})
+
+    def get_guild(self, guild_id):
+        return Guild.deserialize(self._guilds.find_one({"guild_id": guild_id}))
+
+    def add_manga(self, manga):
+        self._manga.insert_one(manga.serialized)
+
+    def get_manga(self, manga_id):
+        manga_data = self._manga.find_one({"id": manga_id})
+        return None if manga_data is None else Manga.populate(manga_data)
+
+
+database = Database()

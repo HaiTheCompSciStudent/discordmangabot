@@ -1,53 +1,36 @@
 import discord
 from discord.ext import commands
-from cogs.exceptions import *
-import formatter
-from database import database
+from config import TOKEN
+from exceptions import *
+from util import _prefix_callable, get_prefix
 
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-TOKEN = os.getenv('TOKEN')
-
-
-def prefix_callable(bot, msg):
-    guild = database.get_guild(msg.guild.id)
-    return guild.prefix
-
-
-def get_prefix(guild_id):
-    guild = database.get_guild(guild_id)
-    return guild.prefix
-
-
-bot = commands.Bot(command_prefix=prefix_callable)
+bot = commands.Bot(command_prefix=_prefix_callable)
 bot.remove_command("help")
+
+@bot.event
+async def on_ready():
+    print(f"Logged in as {bot.user.name}")
+    print(f"Serving {len(bot.guilds)} guilds!")
+    print(f"-------------------------")
+
 
 @bot.event
 async def on_command_error(ctx, error):
     error = getattr(error, "original", error)
-    if isinstance(error, IndexbotExceptions):
-        await ctx.channel.send(embed=formatter.pretty_embed(error.message))
-    if isinstance(error, (UsageError, commands.MissingRequiredArgument, commands.BadArgument)):
-        usage_msg = f"**Usage:** **`{get_prefix(ctx.guild.id)}{ctx.command} {ctx.command.usage}`**"
-        await ctx.channel.send(embed=formatter.pretty_embed(usage_msg))
+    if isinstance(error, BotException):
+        embed = discord.Embed(color=0x00aaff, description=error.message)
+        await ctx.send(embed=embed)
+    if isinstance(error, commands.UserInputError):
+        embed = discord.Embed(color=0x00aaff,
+                              description=f"**Usage:** **`{get_prefix(ctx.guild.id)}{ctx.command} {ctx.command.usage}`**")
+        await ctx.send(embed=embed)
 
-@bot.event
-async def on_ready():
-    print(len(bot.guilds))
-    game = discord.Game("It works now use -help")
-    await bot.change_presence(activity=game)
-
-COGS = [
-    'cogs.mangadex',
-    'cogs.general'
+cogs = [
+    "cogs.mangadex",
+    "cogs.general"
 ]
 
-for cog in COGS:
+for cog in cogs:
     bot.load_extension(cog)
-
-print(bot.commands)
 
 bot.run(TOKEN)

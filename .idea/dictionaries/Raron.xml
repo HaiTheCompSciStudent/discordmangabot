@@ -3,10 +3,14 @@
     <words>
       <w>blockify</w>
       <w>cmds</w>
+      <w>emoji</w>
+      <w>emojis</w>
       <w>hentai</w>
       <w>indexbot</w>
+      <w>linecount</w>
       <w>manga</w>
       <w>mangadex</w>
+      <w>mongo</w>
     </words>
   </dictionary>
 </component>

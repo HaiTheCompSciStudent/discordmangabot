@@ -1,40 +1,32 @@
-import asyncio
-import discord
-import math
-import os
-import time
-from discord.ext import commands, tasks
-
 import aiohttp
+import discord
+from discord.ext import commands, tasks
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 
-import formatter
-from cogs.exceptions import *
 from database import database
-from models.discord.guild import Guild
-from models.mangadex.chapter import Chapter
-from models.mangadex.manga import Manga
+from exceptions import MangadexError, EntryError, NoChoiceError, EmptyError
+import util
+from util import MangaPaginator, ChoiceMenu
 
-# TODO: add a config file
-load_dotenv()
+from models.manga import Manga
+from models.chapter import Chapter
+from models.subscription import Subscription
 
-USERNAME = os.getenv('USER')
-PASSWORD = os.getenv('PASSWORD')
-UPDATE_INTERVAL = os.getenv('UPDATE_INTERVAL')
+from config import LOGIN_CRED, UPDATE_INTERVAL, AUTH_INTERVAL
+
+import time
 
 
-class Mangadex(commands.Cog, name="Mangadex"):
+class Mangadex(commands.Cog):
 
-    def __init__(self, bot, session, is_auth):
+    def __init__(self, bot, session=None, is_auth=False):
         self.bot = bot
-        self.session = session
+        self.session = aiohttp.ClientSession() if session is None else session
+        self._manga_update_task.start()
         self.is_auth = is_auth
-        self.manga_update_task.start()
-        self.auth_task.start()
+        self._auth_task.start()
 
-    @staticmethod
-    async def login(username, password):
+    async def login(self, username, password):
         if not username or not password:
             raise ValueError("No username or password!")
         url = "https://mangadex.org/ajax/actions.ajax.php?function=login"
@@ -45,10 +37,7 @@ class Mangadex(commands.Cog, name="Mangadex"):
             "login_username": username,
             "login_password": password
         }
-
-        session = aiohttp.ClientSession()
-        await session.post(url, headers=headers, data=payload)
-        return session
+        await self.session.post(url, headers=headers, data=payload)
 
     async def fetch_html(self, url):
         async with self.session.get(url) as resp:
@@ -67,12 +56,12 @@ class Mangadex(commands.Cog, name="Mangadex"):
             manga = data["manga"]
         except aiohttp.ClientResponseError as err:
             if err.status == 404:
-                raise MangadexError(f"❌ **Error:** **[`{manga_id}`]** isn't a valid Manga ID.")
+                raise MangadexError(f"**[`{manga_id}`]** isn't a valid Manga ID.")
             else:
-                raise MangadexError(f"❌ **Error:"
-                                    f"** **HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
+                raise MangadexError(f"**HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
         else:
-            return Manga(manga_id).populate(manga)
+            manga["id"] = manga_id
+            return Manga.populate(manga)
 
     async def fetch_chapter(self, chapter_id):
         url = f"https://mangadex.org/api/chapter/{chapter_id}"
@@ -80,11 +69,11 @@ class Mangadex(commands.Cog, name="Mangadex"):
             chapter = await self.fetch_json(url)
         except aiohttp.ClientResponseError as err:
             if err.status == 404:
-                raise MangadexError(f"❌ **Error:** **[`{chapter_id}`]** isn't a valid Chapter ID.")
-            raise MangadexError(f"❌ **Error:"
-                                f"** **HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
+                raise MangadexError(f"**[`{chapter_id}`]** isn't a valid Chapter ID.")
+            raise MangadexError(f"** **HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
         else:
-            return Chapter(chapter_id).populate(chapter)
+            chapter["id"] = chapter_id
+            return Chapter.populate(chapter)
 
     async def fetch_chapters(self, manga_id, time_limit, current_time, lang_code="gb"):
         url = f"https://mangadex.org/api/manga/{manga_id}"
@@ -94,10 +83,9 @@ class Mangadex(commands.Cog, name="Mangadex"):
             chapters = data["chapter"]
         except aiohttp.ClientResponseError as err:
             if err.status == 404:
-                raise MangadexError(f"❌ **Error:** **[`{manga_id}`]** isn't a valid Manga ID.")
+                raise MangadexError(f"**[`{manga_id}`]** isn't a valid Manga ID.")
             else:
-                raise MangadexError(f"❌ **Error:"
-                                    f"** **HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
+                raise MangadexError(f"** **HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
         except KeyError:
             raise MangadexError(f"{title} doesn't have any chapters!")
         else:
@@ -106,38 +94,10 @@ class Mangadex(commands.Cog, name="Mangadex"):
                 chapter = chapters[chapter_id]
                 if chapter["lang_code"] == lang_code:
                     if current_time - chapter["timestamp"] < time_limit:
-                        fetched_chapters.append(Chapter(chapter_id).populate(chapter))
+                        chapter["id"] = chapter_id
+                        fetched_chapters.append(Chapter.populate(chapter))
                     else:
                         break
-            return fetched_chapters
-
-    async def fetch_latest_chapters(self, manga_id, max_results=1, lang_code="gb"):
-        url = f"https://mangadex.org/api/manga/{manga_id}"
-        try:
-            data = await self.fetch_json(url)
-            title = data["manga"]["title"]
-            chapters = data["chapter"]
-        except aiohttp.ClientResponseError as err:
-            if err.status == 404:
-                raise MangadexError(f"❌ **Error:** **[`{manga_id}`]** isn't a valid Manga ID.")
-            else:
-                raise MangadexError(f"❌ **Error:"
-                                    f"** **HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
-        except KeyError:
-            raise MangadexError(f"{title} doesn't have any chapters!")
-        else:
-            fetched_chapters = []
-            counter = 0
-            for chapter_id in chapters:
-                chapter = chapters[chapter_id]
-                if chapter["lang_code"] == lang_code:
-                    fetched_chapters.append(Chapter(chapter_id).populate(chapter))
-                    counter += 1
-                else:
-                    continue
-                if counter == max_results:
-                    break
-
             return fetched_chapters
 
     async def search(self, title, max_results=5):
@@ -155,280 +115,302 @@ class Mangadex(commands.Cog, name="Mangadex"):
             print(title)
             manga_id = query.get("data-id")
             manga_data = {
+                "id": manga_id,
                 "title": title
             }
-            results.append(Manga(manga_id).populate(manga_data))
+            results.append(Manga.populate(manga_data))
             if i == max_results - 1:
                 break
         return results
 
-    @commands.command(name="sub", usage="[Manga ID] [@Member]")
-    async def sub(self, ctx, manga_id: str, member: discord.Member = None):
-
+    @commands.command(name="sub",
+                      usage="[Manga ID||Manga URL] [@Member]",
+                      description="Subscribe the user to a manga and pings them when there is a new chapter.",
+                      help="[Manga ID||Manga URL]:\n"
+                           "#Reference to the manga, could be a Mangadex.org link or a id\n"
+                           "[@Member]:\n"
+                           "#Must be a ping to a member of the guild, defaulted to the user\n"
+                           " \n"
+                           "Example:\n"
+                           "{prefix}sub 39 @dude\n"
+                           "#Subscribes @dude to [One Piece] (https://mangadex.org/title/39)")
+    async def sub(self, ctx, manga_ref, member: discord.Member = None):
         member = ctx.author if member is None else member
-
         guild = database.get_guild(ctx.guild.id)
+
+        manga_id = util.split_id(manga_ref)
         manga = database.get_manga(manga_id)
 
-        if not manga:
+        if manga is None:
             manga = await self.fetch_manga(manga_id)
-            database.insert_manga(manga)
+            database.add_manga(manga)
 
-        if not guild.check_subscription(manga_id):
-            guild.insert_subscription(manga_id)
+        if manga_id not in guild.id_list:
+            guild.subscriptions.append(Subscription(manga_id))
 
         subscription = guild.get_subscription(manga_id)
 
-        try:
-            subscription.insert_subscriber(member.id)
-        except EntryError:
-            raise EntryError(f"❌ **Error:** **{member}** is already subscribed to **[{manga.title}]**.")
+        if member.id in subscription.subscribers:
+            raise EntryError(f"**{member}** is already subscribed to **[{manga.title}]**.")
 
-        database.update_guild(ctx.guild.id, guild.serialize())
-        success_msg = f"☑ **{member}** has successfully subscribed to **[{manga.title}]**."
+        subscription.subscribers.append(member.id)
 
-        await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
+        database.update_guild(guild)
 
-    @commands.command(name="unsub", usage="[Manga ID] [@Member]")
-    async def unsub(self, ctx, manga_id: str, member: discord.Member = None):
+        embed = discord.Embed(color=0x00aaff,
+                              description=f"☑ **Success:** **{member}** has successfully subscribed to **[{manga.title}].**")
+        await ctx.send(embed=embed)
 
+    @commands.command(name="unsub",
+                      usage="[Manga ID||Manga URL] [@Member]",
+                      description="Unsubscribe the user from a manga.",
+                      help="[Manga ID||Manga URL]:\n"
+                           "#Reference to the manga, could be a Mangadex.org link or a id\n"
+                           "[@Member]:\n"
+                           "#Must be a ping to a member of the guild, defaulted to the user\n"
+                           " \n"
+                           "Example:\n"
+                           "{prefix}unsub 39 @dude\n"
+                           "#Unubscribes @dude from [One Piece] (https://mangadex.org/title/39)")
+    async def unsub(self, ctx, manga_ref, member: discord.Member = None):
         member = ctx.author if member is None else member
-
         guild = database.get_guild(ctx.guild.id)
+
+        manga_id = util.split_id(manga_ref)
         manga = database.get_manga(manga_id)
+
+        if manga is None:
+            manga = await self.fetch_manga(manga_id)
+            database.add_manga(manga)
+
+        if manga_id not in guild.id_list:
+            raise EntryError(f"**[{manga.title}]** is not on the subscription list.")
 
         subscription = guild.get_subscription(manga_id)
 
-        if not subscription:
-            raise EntryError("❌ **Error:** No such subscription found!")
+        if member.id not in subscription.subscribers:
+            raise EntryError(f"**{member}** is already subscribed to **[{manga.title}]**.")
 
-        try:
-            subscription.remove_subscriber(member.id)
-        except EntryError:
-            raise EntryError(f"❌ **Error:** **{member}** is not subscribed to **[{manga.title}]**.")
+        subscription.subscribers.remove(member.id)
 
-        success_msg = f"☑ **{member}** has successfully unsubscribed from **[{manga.title}]**."
-        await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
+        database.update_guild(guild)
 
-    @commands.command(name="addsub", usage="[Manga ID]")
-    async def add_sub(self, ctx, manga_id: str):
+        embed = discord.Embed(color=0x00aaff,
+                              description=f"☑ **Success:** **{member}** has successfully unsubscribed from **[{manga.title}]**.")
+        await ctx.send(embed=embed)
 
+    @commands.command(name="addsub",
+                      usage="[Manga ID||Manga URL]",
+                      description="Add a manga to the subscription list.",
+                      help="[Manga ID||Manga URL]:\n"
+                           "#Reference to the manga, could be a Mangadex.org link or a id\n"
+                           " \n"
+                           "Example:\n"
+                           "{prefix}addsub 39\n"
+                           "#Adds [One Piece] to the subscription list (https://mangadex.org/title/39)")
+    async def add_sub(self, ctx, manga_ref):
         guild = database.get_guild(ctx.guild.id)
+
+        manga_id = util.split_id(manga_ref)
         manga = database.get_manga(manga_id)
 
-        if not manga:
+        if manga is None:
             manga = await self.fetch_manga(manga_id)
-            database.insert_manga(manga)
+            database.add_manga(manga)
 
-        try:
-            guild.insert_subscription(manga_id)
-        except EntryError:
-            raise EntryError(f"❌ **Error:** **[{manga.title}]** is already on the subscription list!")
+        if manga_id in guild.id_list:
+            raise EntryError(f"**[{manga.title}]** is already on the subscription list.")
 
-        database.update_guild(ctx.guild.id, guild.serialize())
-        success_msg = f"☑ **[{manga.title}]** has successfully been added to the subscription list!."
-        await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
+        guild.subscriptions.append(Subscription(manga_id))
 
-    @commands.command(name="removesub", usage="[Manga ID]")
-    async def remove_sub(self, ctx, manga_id: str):
+        database.update_guild(guild)
 
+        embed = discord.Embed(color=0x00aaff,
+                              description=f"☑ **Success:** **[{manga.title}]** has successfully been added to the subscription list.")
+        await ctx.send(embed=embed)
+
+    @commands.command(name="removesub",
+                      usage="[Manga ID||Manga URL]",
+                      description="Add a manga to the subscription list.",
+                      help="[Manga ID||Manga URL]:\n"
+                           "#Reference to the manga, could be a Mangadex.org link or a id\n"
+                           " \n"
+                           "Example:\n"
+                           "{prefix}removesub 39\n"
+                           "#Removes [One Piece] from the subscription list (https://mangadex.org/title/39)")
+    async def remove_sub(self, ctx, manga_ref):
         guild = database.get_guild(ctx.guild.id)
+
+        manga_id = util.split_id(manga_ref)
         manga = database.get_manga(manga_id)
 
-        if not manga:
+        if manga is None:
             manga = await self.fetch_manga(manga_id)
-            database.insert_manga(manga)
+            database.add_manga(manga_id)
 
-        try:
-            guild.remove_subscription(manga_id)
-        except EntryError:
-            raise EntryError(f"❌ **Error:** **[{manga.title}]** is not on the subscription list!")
+        if manga_id not in guild.id_list:
+            EntryError(f"**[{manga.title}]** is not on the subscription list.")
 
-        database.update_guild(ctx.guild.id, guild.serialize())
-        success_msg = f"☑ **[{manga.title}]** has successfully been removed from the subscription list!."
-        await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
+        subscription = guild.get_subscription(manga_id)
+        guild.subscriptions.remove(subscription)
 
-    @commands.command(name="list", usage="[Page Number]")
-    async def list_manga(self, ctx, page: int = 1):
+        database.update_guild(guild)
 
+        embed = discord.Embed(color=0x00aaff,
+                              description=f"☑ **Success:** **[{manga.title}]** has successfully been removed to the subscription list.")
+        await ctx.send(embed=embed)
+
+    @commands.command(name="list",
+                      usage="",
+                      description="List all the manga currently subscribed in the server.",
+                      help="Hint:\n"
+                           "#Use reaction to switch pages.")
+    async def list(self, ctx):
         guild = database.get_guild(ctx.guild.id)
-        m_id_list = guild.subscription_ids
-        length = len(m_id_list)
-
-        if not m_id_list:
-            raise MangadexError(f"❌ **Error:** **[`{ctx.guild}`]** doesn't have any subscriptions!")
-
-        total_page = math.ceil(length / 9)
-
-        if page < 0 or page > total_page:
-            raise UsageError(f"❌ **Error:** **[`{page}`]** is not a valid page number! [`{total_page}`] total pages.")
-
-        m_id_list = m_id_list[(page - 1) * 9:]
-
-        manga_list = []
-        for i, manga_id in enumerate(m_id_list):
-            i = i + ((page - 1) * 9) + 1
+        lines = []
+        for i, manga_id in enumerate(guild.id_list):
             manga = database.get_manga(manga_id)
-            manga_list.append((i, f"{manga.title} {manga_id}"))
-            if i == 8:
-                break
+            lines.append(f"[{(i + 1)}] : {manga.title} [{manga.id}]")
+        if not lines:
+            raise EmptyError(f"**[`{ctx.guild.name}`]** doesn't have any any subscriptions.")
+        embed = discord.Embed(color=0x00aaff)
+        embed.set_author(name=ctx.guild.name)
+        await MangaPaginator.paginate(ctx, embed, lines, fill_empty=True)
 
-        fmt_manga_list = formatter.prettify_list(manga_list)
-        fmt_manga_list = formatter.code_blockify(content=fmt_manga_list, footer=f"Page {page} of {total_page}")
+    @commands.command(name="info",
+                      usage="[Manga ID||Manga URL]",
+                      description="Shows all the subscribers of a manga.",
+                      help="[Manga ID||Manga URL]:\n"
+                           "#Reference to the manga, could be a Mangadex.org link or a id\n"
+                           " \n"
+                           "Example:\n"
+                           "{prefix}info 39\n"
+                           "#Shows [One Piece] subscribers. (https://mangadex.org/title/39)")
+    async def info(self, ctx, manga_ref):
+        guild = database.get_guild(ctx.guild.id)
+        manga_id = util.split_id(manga_ref)
+        manga = database.get_manga(manga_id)
 
-        embed = discord.Embed(title=ctx.guild.name, color=0x00aaff)
-        embed.add_field(name=f"**Tracking [{length}] manga**", value=fmt_manga_list)
+        if manga is None:
+            manga = await self.fetch_manga(manga_id)
+            database.add_manga(manga)
 
-        await ctx.channel.send(embed=embed)
+        if manga_id not in guild.id_list:
+            raise EntryError(f"**[{manga.title}]** is not on the subscription list.")
 
-    @commands.command(name="search", usage="[Keywords]")
-    async def quick_search(self, ctx, *key: str):
-        if not self.is_auth:
-            raise MangadexError(f"❌ **Error:** Search function is not available as agent is not authenticated.")
-        regex = "%20".join(list(key))
-        print(f"regex: {regex}")
+        subscription = guild.get_subscription(manga_id)
+        members = ", ".join([f"{str(self.bot.get_user(subscriber))}" for subscriber in subscription.subscribers])
 
-        if not regex:
-            raise UsageError
+        embed = discord.Embed()
+        embed.set_author(name=util.shorten_text(manga.title, 55))
+        embed.description = "SUBSCRIBERS:\n" + util.code_blockify(members)
 
-        results = await self.search(regex)
-        length = len(results)
-        fmt_manga_list = [(i + 1, f"{manga.title} {manga.id}") for i, manga in enumerate(results)]
-        fmt_manga_list = formatter.prettify_list(fmt_manga_list)
-        fmt_manga_list = formatter.code_blockify(content=fmt_manga_list)
+        await ctx.send(embed=embed)
 
-        if not results:
-            raise IndexbotExceptions(f"No results found!")
-
-        embed = discord.Embed(title=f"**Showing [{length}] results**", color=0x00aaff)
-        embed.add_field(name="**Input `1~5` to select a manga to add, `x` to cancel.**",
-                        value=fmt_manga_list)
-        prompt = await ctx.channel.send(embed=embed)
-        print(prompt.id)
-
-        def check(m):
-            crr_choice = [str(i + 1) for i in range(length)]
-            crr_choice.append("x")
-
-            return m.author == ctx.author \
-                and m.content in crr_choice \
-                and m.channel == ctx.channel
-
-        try:
-            choice = await self.bot.wait_for('message', timeout=30, check=check)
-        except asyncio.TimeoutError:
-            raise IndexbotExceptions("❌ **Timeout!**")
-        else:
-            if choice.content == "x":
-                await prompt.delete(delay=0.5)
-                await ctx.channel.send(embed=formatter.pretty_embed("❌ Search **cancelled!**"))
-
-            manga_id = results[int(choice.content) - 1].id
-
-            guild = database.get_guild(ctx.guild.id)
-            manga = database.get_manga(manga_id)
-
-            if not manga:
-                manga = await self.fetch_manga(manga_id)
-                database.insert_manga(manga)
-
-            try:
-                guild.insert_subscription(manga_id)
-            except EntryError:
-                raise EntryError(f"❌ **Error:** **[{manga.title}]** is already on the subscription list!")
-
-            database.update_guild(ctx.guild.id, guild.serialize())
-            success_msg = f"☑ **[{manga.title}]** has successfully been added to the subscription list!"
-            await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
-
-    @commands.command(name="here", usage="")
+    @commands.command(name="here",
+                      usage="",
+                      description="Designate the channel where the command is called as the update channel.",
+                      help="Hint:\n"
+                           "#Make sure bots can post in the channel you want to designate,"
+                           "without this command being called the bot is pretty much useless.")
     async def here(self, ctx):
         guild = database.get_guild(ctx.guild.id)
-        guild.set_channel(ctx.channel.id)
-        database.update_guild(ctx.guild.id, guild.serialize())
-        success_msg = f"☑ **[{ctx.channel}]** has been designated as the update channel!"
-        await ctx.channel.send(embed=formatter.pretty_embed(success_msg))
+        guild.channel = ctx.channel.id
+        database.update_guild(guild)
 
-    @commands.command(name="info", usage="[Manga ID]")
-    async def info(self, ctx, manga_id):
-        guild = database.get_guild(ctx.guild.id)
-        manga = database.get_manga(manga_id)
-
-        if not manga:
-            manga = await self.fetch_manga(manga_id)
-            database.insert_manga(manga)
-
-        if not guild.check_subscription(manga_id):
-            raise IndexbotExceptions(f"❌ **Error:** **[{manga.title}]** is not on the subscription list!")
-
-        subscription = guild.get_subscription(manga_id)
-        subscribers = [self.bot.get_user(sub) for sub in subscription.subscribers]
-
-        embed = discord.Embed(color=0x00aaff)
-        embed.set_author(name=f"Here is all the info about [{manga.title}]")
-        embed.add_field(name=f"{'subscribers'.upper()}", value=", ".join([f"**`{sub}`**" for sub in subscribers]))
-
+        embed = discord.Embed(color=0x00aaff,
+                              description=f"☑ **Success:** **[{ctx.channel}]** has be designated as the update channel.")
         await ctx.channel.send(embed=embed)
 
-    @commands.command(name="latestchap", usage="[Manga ID]")
-    async def latest_chap(self, ctx, manga_id, lang_code="gb"):
-        chapters = await self.fetch_latest_chapters(manga_id, lang_code=lang_code)
-        chapter_links = "\n".join([f"https://mangadex.org/chapter/{chapter.id}" for chapter in chapters])
-        await ctx.channel.send(chapter_links)
+    @commands.command(name="search",
+                      usage="[Keywords]",
+                      description="Search manga based on the keywords on mangadex.org and adds them if given a choice.",
+                      help="[Keywords]:\n"
+                           "#Keywords to be searched on Mangadex.org\n"
+                           " \n"
+                           "Example:\n"
+                           "{prefix}search One Piece\n"
+                           "#Searches [One Piece] on Mangadex.org\n"
+                           " \n"
+                           "Hint:\n"
+                           "#Use reaction to pick the results and add it to the subscription list.")
+    async def quick_search(self, ctx, *key):
+        if not self.is_auth:
+            raise MangadexError("Search function is currently unavailable, please try again later.")
 
-    @tasks.loop(minutes=20)
-    async def manga_update_task(self):
-        # TODO: CLEAN UP
-        print("Starting update loop!")
+        guild = database.get_guild(ctx.guild.id)
+
+        if len(key) <= 0:
+            raise commands.UserInputError
+        regex = "%20".join(key)
+
+        results = await self.search(regex)
+
+        if len(results) <= 0:
+            raise EmptyError("No results found!")
+
+        choices = []
+        for i, manga in enumerate(results):
+            choices.append((manga.id, f"[{i + 1}] : {manga.title} {manga.id}"))
+
+        embed = discord.Embed(color=0x00aaff)
+        embed.set_author(name=f"Showing {len(results)} results.")
+
+        manga_id = await ChoiceMenu.prompt(ctx, embed, choices, max_lines=5, fill_empty=True)
+
+        if manga_id is None:
+            raise NoChoiceError
+
+        manga = database.get_manga(manga_id)
+
+        if manga is None:
+            manga = await self.fetch_manga(manga_id)
+            database.add_manga(manga)
+
+        if manga_id in guild.id_list:
+            raise EntryError(f"**[{manga.title}]** is already on the subscription list.")
+
+        guild.subscriptions.append(Subscription(manga_id))
+
+        database.update_guild(guild)
+
+        embed = discord.Embed(color=0x00aaff,
+                              description=f"☑ **Success:** **[{manga.title}]** has successfully been added to the subscription list.")
+        await ctx.send(embed=embed)
+
+    @tasks.loop(seconds=UPDATE_INTERVAL)
+    async def _manga_update_task(self):
+        return
         current_time = time.time()
-        manga_pool = {}
-        for guild_data in database.guild_objs:
-            guild = Guild.from_json(guild_data)
-            if guild.channel is not None:
-                channel = self.bot.get_channel(guild.channel)
-                for subscription in guild.subscriptions:
-                    chapter_links = []
+        fetched_chapter_pool = {}
+        for guild in database.guilds:
+            channel = self.bot.get_channel(guild.channel)
+            if channel is not None:
+                for manga_id in guild.id_list:
+                    subscription = guild.get_subscription(manga_id)
                     try:
-                        chapter_links = manga_pool[subscription.manga_id]
+                        fetched_chapters = fetched_chapter_pool[manga_id]
                     except KeyError:
-                        try:
-                            manga_pool[subscription.manga_id] = await self.fetch_chapters(subscription.manga_id,
-                                                                                          20 * 60, current_time)
-                            chapter_links = manga_pool[subscription.manga_id]
-                        except Exception as err:
-                            print(
-                                f"Guild: [{guild.guild_id}] Manga: [{subscription.manga_id}] Error: {type(err)} {err}")
+                        fetched_chapter_pool[manga_id] = await self.fetch_chapters(manga_id, UPDATE_INTERVAL,
+                                                                                   current_time)
+                        fetched_chapters = fetched_chapter_pool[manga_id]
+                    ping_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
+                    fetched_chapter_links = "\n".join([chapter.url for chapter in fetched_chapters])
+                    await channel.send("\n".join([ping_members, fetched_chapter_links]))
 
-                    if chapter_links:
-                        notified_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
-                        chapter_links = "\n".join([f"https://mangadex.org/chapter/{chapter.id}" for chapter
-                                                   in manga_pool[subscription.manga_id]])
-                        await channel.send(notified_members + "\n" + chapter_links)
-
-        print(manga_pool)
-        print("Update loop ended!")
-
-    @manga_update_task.before_loop
-    async def bfr_update(self):
+    @_manga_update_task.before_loop
+    async def _before_update_task(self):
         await self.bot.wait_until_ready()
 
-    @tasks.loop(minutes=60)
-    async def auth_task(self):
-        self.session = await self.login(USERNAME, PASSWORD)
-        if not await self.search("komi"):
-            self.is_auth = False
-        else:
-            self.is_auth = True
+    @tasks.loop(seconds=AUTH_INTERVAL)
+    async def _auth_task(self):
+        await self.login(LOGIN_CRED["USERNAME"], LOGIN_CRED["PASSWORD"])
+        self.is_auth = False if not await self.search("komi") else True
 
-    @auth_task.before_loop
-    async def bfr_auth(self):
-        await asyncio.sleep(60*60)
+    @_auth_task.before_loop
+    async def _before_auth_task(self):
+        await self.bot.wait_until_ready()
+
 
 def setup(bot):
-    # TODO: do the auth thing properly
-    loop = asyncio.get_event_loop()
-    session = loop.run_until_complete(Mangadex.login(USERNAME, PASSWORD))
-    cog = Mangadex(bot, session, True)
-    if not loop.run_until_complete(cog.search("komi")):
-        cog.is_auth = False
-    bot.add_cog(cog)
+    bot.add_cog(Mangadex(bot))

@@ -15,17 +15,21 @@ class Manga:
         self.hentai = None
         self.links = None
 
-    def populate(self, data):
-        for attr, value in vars(self).items():
-            try:
-                setattr(self, attr, data[attr])
-            except KeyError:
-                continue
-        return self
+    @classmethod
+    def populate(cls, data):
+        manga = cls(data["id"])
+        for key, value in data.items():
+            setattr(manga, key, value)
+        return manga
 
-    def serialize(self):
+    @property
+    def serialized(self):
         return self.__dict__
 
-    @classmethod
-    def from_json(cls, data):
-        return cls(data["id"]).populate(data)
+    @property
+    def url(self):
+        return f"https://mangadex.org/title/{self.id}"
+
+    @property
+    def api_url(self):
+        return f"https://mangadex.org/api/manga/{self.id}"

@@ -1,0 +1,12 @@
+{
+  "TOKEN": "NjcwNDIzMzc2MTQwOTU5NzY3.XltBiw.FUPR6ctbbJQ7RRZWCrHqQf5fU44",
+  "DEFAULT_PREFIX": "-",
+  "MONGO_URI": "mongodb+srv://tokubetsu:wPcpAfTxol@mangacluster-sidp0.gcp.mongodb.net/test?retryWrites=true&w=majority",
+  "LOGIN_CRED": {
+    "USERNAME": "haimangabot",
+    "PASSWORD": "e%Z@CppazqC!2nF{"
+  },
+  "UPDATE_INTERVAL": 12000000,
+  "FEEDBACK_CHANNEL": 430339840224264204,
+  "AUTH_INTERVAL": 1800
+}
