@@ -380,7 +380,7 @@ class Mangadex(commands.Cog):
 
     @tasks.loop(seconds=UPDATE_INTERVAL)
     async def _manga_update_task(self):
-        return
+        print("Starting update loop")
         current_time = time.time()
         fetched_chapter_pool = {}
         for guild in database.guilds:
@@ -397,6 +397,7 @@ class Mangadex(commands.Cog):
                     ping_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
                     fetched_chapter_links = "\n".join([chapter.url for chapter in fetched_chapters])
                     await channel.send("\n".join([ping_members, fetched_chapter_links]))
+        print(f"{len(fetched_chapter_pool)} tracked, update loop ended")
 
     @_manga_update_task.before_loop
     async def _before_update_task(self):
@@ -404,8 +405,10 @@ class Mangadex(commands.Cog):
 
     @tasks.loop(seconds=AUTH_INTERVAL)
     async def _auth_task(self):
+        print("Starting authenticate task.")
         await self.login(LOGIN_CRED["USERNAME"], LOGIN_CRED["PASSWORD"])
         self.is_auth = False if not await self.search("komi") else True
+        print(f"Authenticate task ended, authentication status: {self.is_auth}")
 
     @_auth_task.before_loop
     async def _before_auth_task(self):
