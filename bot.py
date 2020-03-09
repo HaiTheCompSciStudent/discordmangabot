@@ -12,6 +12,8 @@ async def on_ready():
     print(f"Logged in as {bot.user.name}")
     print(f"Serving {len(bot.guilds)} guilds!")
     print(f"-------------------------")
+    game = discord.Game("It works now, use -help")
+    await bot.change_presence(activity=game)
 
 
 @bot.event
