@@ -396,7 +396,8 @@ class Mangadex(commands.Cog):
                         fetched_chapters = fetched_chapter_pool[manga_id]
                     ping_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
                     fetched_chapter_links = "\n".join([chapter.url for chapter in fetched_chapters])
-                    await channel.send("\n".join([ping_members, fetched_chapter_links]))
+                    if fetched_chapter_links:
+                        await channel.send("\n".join([ping_members, fetched_chapter_links]))
         print(f"{len(fetched_chapter_pool)} tracked, update loop ended")
 
     @_manga_update_task.before_loop
