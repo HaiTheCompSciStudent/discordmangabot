@@ -46,14 +46,14 @@ class General(commands.Cog):
                            "#Shows detailed help about the 'sub' command")
     async def help(self, ctx, cmd=None):
         prefix = get_prefix(ctx.guild.id)
-        embed = discord.Embed()
+        embed = discord.Embed(color=0x00aaff)
         if cmd is None:
             embed.description = f"**Haibot** is a bot that fetches manga updates from Mangadex.org on a 20 minute cycle, " \
                                 f"use `{prefix}here` on a channel to get started.\n \u200b"
             cogs = self.bot.cogs
             for cog_name, cog in cogs.items():
                 embed.add_field(name=cog_name.upper(),
-                                value=", ".join([f"`{cmd.name}`" for cmd in cog.get_commands()]),
+                                value=", ".join([f"**`{cmd.name}`**" for cmd in cog.get_commands()]),
                                 inline=False)
             embed.add_field(name="\u200b",
                             value=f"**Use `{prefix}help [Command]` to find out more about a command.**",
