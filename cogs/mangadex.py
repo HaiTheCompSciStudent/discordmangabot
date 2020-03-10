@@ -384,7 +384,6 @@ class Mangadex(commands.Cog):
 
     @tasks.loop(seconds=UPDATE_INTERVAL)
     async def _manga_update_task(self):
-        return
         print("Starting update loop")
         current_time = time.time()
         fetched_chapter_pool = {}
