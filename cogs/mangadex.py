@@ -299,11 +299,15 @@ class Mangadex(commands.Cog):
             raise EntryError(f"**[{manga.title}]** is not on the subscription list.")
 
         subscription = guild.get_subscription(manga_id)
+
+        if not subscription.subscribers:
+            raise EmptyError(f"There is members currently subscribed to **[{manga.title}]**.")
+
         members = ", ".join([f"{str(self.bot.get_user(subscriber))}" for subscriber in subscription.subscribers])
 
-        embed = discord.Embed()
+        embed = discord.Embed(color=0x00aaff)
         embed.set_author(name=util.shorten_text(manga.title, 55))
-        embed.description = "SUBSCRIBERS:\n" + util.code_blockify(members)
+        embed.add_field(name="Subscribers", value=util.code_blockify(members))
 
         await ctx.send(embed=embed)
 
@@ -380,6 +384,7 @@ class Mangadex(commands.Cog):
 
     @tasks.loop(seconds=UPDATE_INTERVAL)
     async def _manga_update_task(self):
+        return
         print("Starting update loop")
         current_time = time.time()
         fetched_chapter_pool = {}
@@ -401,6 +406,7 @@ class Mangadex(commands.Cog):
                             await channel.send("\n".join([ping_members, fetched_chapter_links]))
 
             except Exception as err:
+                # CATCHES ALL THE ERRORS BECAUSE IT FREQUENTLY BREAKS
                 print(err)
         print(f"{len(fetched_chapter_pool)} tracked, update loop ended")
 
