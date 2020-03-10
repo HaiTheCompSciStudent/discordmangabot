@@ -1,5 +1,7 @@
+discord
 pymongo
 aiohttp
 beautifulsoup4
 dnspython
 git+https://github.com/Rapptz/discord.py
+dblpy
