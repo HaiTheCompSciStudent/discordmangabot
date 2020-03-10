@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from config import TOKEN
+from config import BOT_TOKEN
 from exceptions import *
 from util import _prefix_callable, get_prefix
 
@@ -29,10 +29,11 @@ async def on_command_error(ctx, error):
 
 cogs = [
     "cogs.mangadex",
-    "cogs.general"
+    "cogs.general",
+    "cogs.topgg"
 ]
 
 for cog in cogs:
     bot.load_extension(cog)
 
-bot.run(TOKEN)
+bot.run(BOT_TOKEN)
