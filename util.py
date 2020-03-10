@@ -191,7 +191,7 @@ class MangaPaginator(Paginator):
         order, _, *title, id_ = line.split(" ")
         if len(" ".join(title)) >= self.width - (len(order) + len(id_) + 4):  # four spaces in-between
             print(title)
-            return " ".join([order, _, " ".join(title)[:(self.width - (len(order) + len(id_) + 7))] + "...", id_])  #
+            return " ".join([order, _, " ".join(title)[:(self.width - (len(order) + len(id_) + 7))] + "...", id_])
             # probably the shittiest code i ever written
         return line
 
@@ -254,7 +254,8 @@ class ChoiceMenu(MangaPaginator):
         try:
             reaction, user = await ctx.bot.wait_for("reaction_add", timeout=timeout, check=event_check)
         except asyncio.TimeoutError:
-            raise
+            await message.delete()
+            return None
 
         await message.remove_reaction(reaction.emoji, user)
 
