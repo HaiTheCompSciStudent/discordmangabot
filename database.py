@@ -28,6 +28,9 @@ class Database:
         self._guilds.find_one_and_delete({"guild_id": guild_id})
 
     def get_guild(self, guild_id):
+        guild_data = self._guilds.find_one({"guild_id": guild_id})
+        if not guild_data:
+            self.add_guild(guild_id)
         return Guild.deserialize(self._guilds.find_one({"guild_id": guild_id}))
 
     def add_manga(self, manga):
