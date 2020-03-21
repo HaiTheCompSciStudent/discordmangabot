@@ -46,19 +46,33 @@ class General(commands.Cog):
                            "#Shows detailed help about the 'sub' command")
     async def help(self, ctx, cmd=None):
         prefix = get_prefix(ctx.guild.id)
-        embed = discord.Embed(title="Here are all the commands!", color=0x00aaff)
+        embed = discord.Embed(title="Hello and thanks for using the bot!", color=0x00aaff)
         if cmd is None:
-            embed.description = f"**Use `{prefix}here` on a channel to get started.**\n \u200b"
+            embed.add_field(name="**GETTING STARTED**",
+                            value=f"To start, use **`{prefix}here`** to choose where it will post the updates.\n"
+                                  f"To subscribe to a manga, use **`{prefix}sub`** or **`{prefix}search`**.\n"
+                                  f" \n"
+                                  f"**# Example:**\n"
+                                  f"**`{prefix}sub 39`**, subscribes **[[One Piece]("
+                                  f"https://mangadex.org/title/39/one-piece/)]**\n "
+                                  f" \n"
+                                  f"**Below is all the commands.**",
+                            inline=False)
+
             cogs = self.bot.cogs
             for cog_name, cog in cogs.items():
                 if not cog.get_commands():
                     continue
-                embed.add_field(name=cog_name.upper(),
+                embed.add_field(name=f"**{cog_name.upper()}**",
                                 value=", ".join([f"**`{cmd.name}`**" for cmd in cog.get_commands()]),
                                 inline=False)
             embed.add_field(name="\u200b",
-                            value=f"**Use `{prefix}help [Command]` to find out more about a command.**",
+                            value=f"Use `{prefix}help [Command]` to get detailed help about a command.\n"
+                                  f"Lastly, the bot fetches updates at a 20-minute basis.\n"
+                                  f" \n"
+                                  f"**Happy Reading!**",
                             inline=False)
+
             return await ctx.send(embed=embed)
 
         if cmd:
