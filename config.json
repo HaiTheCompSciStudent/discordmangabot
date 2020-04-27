@@ -1,5 +1,5 @@
 {
-  "BOT_TOKEN": "NjU1ODA0MjcyNjcxNDU3MzE2.Xmb-5Q.JTpQw6b0wEey3--_uho62HJDHZ0",
+  "BOT_TOKEN": "NjU1ODA0MjcyNjcxNDU3MzE2.XqbXiQ._7EQaZIMzX_nkc0RhympYG8FC8o",
   "DBL_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1NTgwNDI3MjY3MTQ1NzMxNiIsImJvdCI6dHJ1ZSwiaWF0IjoxNTgyNjg5ODc0fQ.lF6a-MbxVnPPaYIlNKIMmwXUDRsSDOaLQrw6wXYjxes",
   "DEFAULT_PREFIX": "-",
   "MONGO_URI": "mongodb+srv://tokubetsu:wPcpAfTxol@mangacluster-sidp0.gcp.mongodb.net/test?retryWrites=true&w=majority",
@@ -9,5 +9,6 @@
   },
   "UPDATE_INTERVAL": 1200,
   "FEEDBACK_CHANNEL": 430339840224264204,
-  "AUTH_INTERVAL": 1800
+  "AUTH_INTERVAL": 1800,
+  "DEV_MODE": false
 }
