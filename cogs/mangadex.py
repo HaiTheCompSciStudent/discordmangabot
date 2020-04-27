@@ -421,7 +421,7 @@ class Mangadex(commands.Cog):
 
             except Exception as err:
                 # CATCHES ALL THE ERRORS BECAUSE IT FREQUENTLY BREAKS
-                print(err)
+                print(
         print(f"{len(fetched_chapter_pool)} tracked, update loop ended")
 
     @_manga_update_task.before_loop
