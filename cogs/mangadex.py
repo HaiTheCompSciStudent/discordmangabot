@@ -12,7 +12,7 @@ from models.manga import Manga
 from models.chapter import Chapter
 from models.subscription import Subscription
 
-from config import LOGIN_CRED, UPDATE_INTERVAL, AUTH_INTERVAL
+from config import LOGIN_CRED, UPDATE_INTERVAL, AUTH_INTERVAL, DEV_MODE
 
 import time
 
@@ -20,6 +20,7 @@ import time
 class Mangadex(commands.Cog):
 
     def __init__(self, bot, session=None, is_auth=False):
+        self.fetched_chapters = []
         self.bot = bot
         self.session = aiohttp.ClientSession() if session is None else session
         self._manga_update_task.start()
@@ -87,7 +88,8 @@ class Mangadex(commands.Cog):
             else:
                 raise MangadexError(f"** **HTTP Error** encountered when accessing Mangadex API : **[`{err.status}`]**")
         except KeyError:
-            raise MangadexError(f"{title} doesn't have any chapters!")
+            print(title, "doesn't have any chapters.")
+            return []
         else:
             fetched_chapters = []
             for chapter_id in chapters:
@@ -386,9 +388,15 @@ class Mangadex(commands.Cog):
     async def _manga_update_task(self):
         print("Starting update loop")
         current_time = time.time()
+        _fetched_chapters = self.fetched_chapters[:]
+        self.fetched_chapters = []
         fetched_chapter_pool = {}
+
         for guild in database.guilds:
             try:
+                if DEV_MODE:
+                    if guild.channel != 430344902878953472:
+                        continue
                 channel = self.bot.get_channel(guild.channel)
                 if channel is not None:
                     for manga_id in guild.id_list:
@@ -396,9 +404,16 @@ class Mangadex(commands.Cog):
                         try:
                             fetched_chapters = fetched_chapter_pool[manga_id]
                         except KeyError:
-                            fetched_chapter_pool[manga_id] = await self.fetch_chapters(manga_id, UPDATE_INTERVAL,
-                                                                                       current_time)
+                            _f_c = await self.fetch_chapters(manga_id, UPDATE_INTERVAL, current_time)
+                            self.fetched_chapters.extend([chapter.id for chapter in _f_c])
+                            a_f_c = []
+                            for c in _f_c:
+                                if c.id not in _fetched_chapters:
+                                    a_f_c.append(c)
+
+                            fetched_chapter_pool[manga_id] = a_f_c
                             fetched_chapters = fetched_chapter_pool[manga_id]
+
                         ping_members = " ".join([f"<@{subscriber}>" for subscriber in subscription.subscribers])
                         fetched_chapter_links = "\n".join([chapter.url for chapter in fetched_chapters])
                         if fetched_chapter_links:
