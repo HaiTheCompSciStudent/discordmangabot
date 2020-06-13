@@ -1,4 +1,5 @@
 import aiohttp
+import typing
 import discord
 from discord.ext import commands, tasks
 from bs4 import BeautifulSoup
