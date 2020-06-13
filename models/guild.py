@@ -20,6 +20,7 @@ class Guild:
 
     @classmethod
     def deserialize(cls, data):
+        print(data)
         id_ = data["guild_id"]
         prefix = data["prefix"]
         channel = data["channel"]
