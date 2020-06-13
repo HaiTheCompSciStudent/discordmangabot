@@ -1,5 +1,5 @@
 {
-  "BOT_TOKEN": "NjU1ODA0MjcyNjcxNDU3MzE2.XqbXiQ._7EQaZIMzX_nkc0RhympYG8FC8o",
+  "BOT_TOKEN": "NjU1ODA0MjcyNjcxNDU3MzE2.XuRIFg.qm50DkrU0U6zL_D4-BXocZc1VwA",
   "DBL_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1NTgwNDI3MjY3MTQ1NzMxNiIsImJvdCI6dHJ1ZSwiaWF0IjoxNTgyNjg5ODc0fQ.lF6a-MbxVnPPaYIlNKIMmwXUDRsSDOaLQrw6wXYjxes",
   "DEFAULT_PREFIX": "-",
   "MONGO_URI": "mongodb+srv://tokubetsu:wPcpAfTxol@mangacluster-sidp0.gcp.mongodb.net/test?retryWrites=true&w=majority",
