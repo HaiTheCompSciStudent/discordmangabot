@@ -22,7 +22,7 @@ class Chapter(metaclass=ChapterMeta):
         self.origin = self.ORIGIN
         self.chapter = data.get("chapter", None)
         self.title = data.get("title", None)
-        self.timestamp = data.get("description", None)
+        self.timestamp = data.get("timestamp", None)
         self.lang_code = data.get("lang_code", None)
 
     @property

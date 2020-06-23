@@ -2,6 +2,8 @@ import json
 from index.bot import Index
 from index.server import Server
 from index import errors
+import discord
+from discord.ext import commands
 
 with open("config.json", "r") as f:
     config = json.load(f)
@@ -30,8 +32,10 @@ async def on_command_error(ctx, error):
     error = getattr(error, "original", error)
     if isinstance(error, errors.EmbedError):
         await ctx.send(embed=error.embed)
-    else:
-        print(error)
+    elif isinstance(error, commands.UserInputError):
+        embed = discord.Embed(color=0x00aaff,
+                              description="**Usage:** `{0.prefix}` {0.command.usage}".format(ctx))
+        await ctx.send(embed=embed)
 
 
 bot.load_extension("cog.core")
