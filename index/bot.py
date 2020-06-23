@@ -130,7 +130,7 @@ class Index(commands.Bot):
 
     def _check_chapter_validity(self, chapter):
         return all((
-            chapter.time_since_released <= self.config.get("update_interval"),
+            chapter.time_since_released <= 20 * 60,
             chapter.lang_code == "gb",
             chapter.timestamp <= time.time()
         ))
