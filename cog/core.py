@@ -304,7 +304,7 @@ class Core(commands.Cog):
                         chapters = pool[subscription.id]
                     except KeyError:
                         try:
-                            chapters = list(await self.bot.fetch_chapters(subscription.id))
+                            chapters = list(await self.bot.fetch_chapters(subscription.origin, subscription.id))
                             pool[subscription.id] = chapters
                         except Exception as err:
                             chapters = pool[subscription.id] = []
