@@ -2,6 +2,7 @@
   "MONGO_URI": "mongodb+srv://tokubetsu:wPcpAfTxol@mangacluster-sidp0.gcp.mongodb.net/test?retryWrites=true&w=majority",
   "BOT_TOKEN": "NjU1ODA0MjcyNjcxNDU3MzE2.XvI63g.WY4o5y6o7Sm2vrJOgl2fYUjh_Oc",
   "DBL_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1NTgwNDI3MjY3MTQ1NzMxNiIsImJvdCI6dHJ1ZSwiaWF0IjoxNTgyNjg5ODc0fQ.lF6a-MbxVnPPaYIlNKIMmwXUDRsSDOaLQrw6wXYjxes",
+  "feedback_channel": 430339840224264204,
   "LIBRARIES": {
     "mangadex": {
       "name": "Mangadex",
