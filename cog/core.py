@@ -311,7 +311,7 @@ class Core(commands.Cog):
                             print("Error upon fetching update from a manga of id '{0}': {1}".format(subscription.id, err))
                     if chapters:
                         await channel.send("{0}\n{1}"
-                                           .format(subscription.mentions,
+                                           .format(" ".join(subscription.mentions),
                                                    "\n".join((chapter.page_url for chapter in chapters))))
         print("Update loop ended")
 

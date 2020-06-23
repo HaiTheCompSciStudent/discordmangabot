@@ -13,6 +13,10 @@ class Subscription:
         return "{0}".format(self.id)
 
     @property
+    def mentions(self):
+        return [*["<@{0}>".format(member) for member in self.members], *["<@{0}>".format(role) for role in self.roles]]
+
+    @property
     def serialized(self):
         return dict(
             id=self.id,
