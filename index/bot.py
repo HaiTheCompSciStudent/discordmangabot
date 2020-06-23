@@ -122,7 +122,7 @@ class Index(commands.Bot):
 
     async def fetch_chapters(self, origin, id):
         lib = self.get_lib(origin)
-        for chapter in lib.fetch_chapters(id):
+        async for chapter in lib.fetch_chapters(id):
             if self._check_chapter_validity(chapter):
                 yield chapter
             else:
