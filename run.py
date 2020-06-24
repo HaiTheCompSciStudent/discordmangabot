@@ -44,6 +44,7 @@ async def on_command_error(ctx, error):
 
 bot.load_extension("cog.core")
 bot.load_extension("cog.general")
+bot.load_extension("cog.topgg")
 
 bot.run(bot.config.get("BOT_TOKEN"))
 
