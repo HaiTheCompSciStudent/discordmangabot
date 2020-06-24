@@ -120,19 +120,19 @@ class Index(commands.Bot):
 
             return results
 
-    async def fetch_chapters(self, origin, id):
+    async def fetch_chapters(self, origin, id, timestamp):
         lib = self.get_lib(origin)
         async for chapter in lib.fetch_chapters(id):
-            if self._check_chapter_validity(chapter):
+            if self._check_chapter_validity(chapter, timestamp):
                 yield chapter
             else:
                 break
 
-    def _check_chapter_validity(self, chapter):
+    def _check_chapter_validity(self, chapter, timestamp):
         return all((
-            time.time() - chapter.timestamp <= 20 * 60,
+            timestamp - chapter.timestamp <= 20 * 60,
             chapter.lang_code == "gb",
-            chapter.timestamp <= time.time()
+            chapter.timestamp <= timestamp
         ))
 
     def get_server(self, id):

@@ -3,6 +3,7 @@ import discord
 
 import asyncio
 import inspect
+import time
 
 from index.paginator import MangaPaginator
 from index.pick import Pick
@@ -246,7 +247,6 @@ class Core(commands.Cog):
                                     ", ".join(str(self.bot.get_role(ctx, role)) for role in subscription.roles)),
                             inline=False)
         embed.add_field(name="Link", value="**[Click Here]({0.page_url})**".format(manga), inline=False)
-        print(type(manga))
         await ctx.send(embed=embed)
 
     @commands.command(name="here",
@@ -296,6 +296,7 @@ class Core(commands.Cog):
     async def update_loop(self):
         print("Starting Update Loop.")
         pool = {}
+        timestamp = time.time()
         for server in self.bot.servers:
             channel = self.bot.get_channel(server.channel_id)
             if channel:
@@ -304,7 +305,9 @@ class Core(commands.Cog):
                         chapters = pool[subscription.id]
                     except KeyError:
                         try:
-                            chapters = [chapter async for chapter in self.bot.fetch_chapters(subscription.origin, subscription.id)]
+                            chapters = [chapter async for chapter in self.bot.fetch_chapters(subscription.origin, subscription.id, timestamp)]
+                            if chapters:
+                                print("Got chapters for manga of ID '{0.id}' from source '{0.origin}'.".format(subscription))
                             pool[subscription.id] = chapters
                         except Exception as err:
                             chapters = pool[subscription.id] = []
@@ -326,6 +329,7 @@ class Core(commands.Cog):
     @refresh_libs_loops.before_loop
     async def before_refresh_loop(self):
         # Delay cause the libs are created at startup
+        await self.bot.wait_until_ready()
         await asyncio.sleep(delay=30 * 60)
 
 def setup(bot):
