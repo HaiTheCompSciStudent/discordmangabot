@@ -36,6 +36,8 @@ async def on_command_error(ctx, error):
         embed = discord.Embed(color=0x00aaff,
                               description="**Usage:** `{0.prefix}` {0.command.usage}".format(ctx))
         await ctx.send(embed=embed)
+    else:
+        print(error)
 
 
 bot.load_extension("cog.core")

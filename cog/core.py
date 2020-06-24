@@ -180,11 +180,12 @@ class Core(commands.Cog):
             raise CogError("The guild doesn't have any subscriptions.")
 
         async def _to_line(i, id):
+            await asyncio.sleep(i * 0.2)
             manga = await bot.get_manga(id)
             lines.append("[{1}] : {0.title} {0.id}".format(manga, i + 1))
 
         await asyncio.gather(*[_to_line(i, subscription.id) for i, subscription in enumerate(server.subscriptions)])
-        embed = discord.Embed()
+        embed = discord.Embed(color=0x00aaff)
         await MangaPaginator.paginate(ctx, embed, lines, fill_empty=True)
 
     @commands.command(name="search",

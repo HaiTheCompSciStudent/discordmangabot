@@ -52,23 +52,25 @@ class GuyaMoe(Library):
 
     def split_id(self, reference):
         if reference.startswith("https://guya.moe/"):
-            return reference.split("/")[4]
+            return SLUG_ID_TABLE.get(reference.split("/")[5])
         elif reference in ID_SLUG_TABLE:
-            return ID_SLUG_TABLE.get(reference)
-        elif reference in SLUG_ID_TABLE:
             return reference
+        elif reference in SLUG_ID_TABLE:
+            return SLUG_ID_TABLE.get(reference)
         raise GuyaError("Invalid URL or ID provided.")
 
-    async def fetch_manga(self, slug):
+    async def fetch_manga(self, id):
+        slug = ID_SLUG_TABLE.get(id)
         url = "https://guya.moe/api/series/{0}".format(slug)
         resp = await self.request(url)
         data = await resp.json()
 
         data["cover_url"] = data.pop("cover")
 
-        return self.manga_factory(slug, data=data)
+        return self.manga_factory(id, data=data)
 
-    async def fetch_chapters(self, slug):
+    async def fetch_chapters(self, id):
+        slug = ID_SLUG_TABLE.get(id)
         url = "https://guya.moe/api/series/{0}".format(slug)
         resp = await self.request(url)
         data = await resp.json()
