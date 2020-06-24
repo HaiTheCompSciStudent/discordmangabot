@@ -40,7 +40,8 @@ class Core(commands.Cog):
         else:
             raise CogError("**[{0.title}]** is already in the subscription list.".format(manga))
         self.bot.update_server(server)
-        embed = discord.Embed(description="**[{0}]** has been added to the subscriptions list!".format(manga.title))
+        embed = discord.Embed(description="**[{0}]** has been added to the subscriptions list!".format(manga.title),
+                              color=0x00aaff)
         await ctx.send(embed=embed)
 
     @commands.command(name="sub",
@@ -88,7 +89,8 @@ class Core(commands.Cog):
         self.bot.update_server(server)
         embed = discord.Embed(
             title="The following members and roles have successfully subscribed from **[{0.title}]**".format(manga),
-            description="```\nMembers: {0}\nRoles: {1}\n```".format(", ".join(_members), ", ".join(_roles))
+            description="```\nMembers: {0}\nRoles: {1}\n```".format(", ".join(_members), ", ".join(_roles)),
+            color=0x00aaff
         )
         await ctx.send(embed=embed)
 
@@ -115,7 +117,7 @@ class Core(commands.Cog):
         else:
             raise CogError("**[{0.title}]** is not in the subscription list.".format(manga))
         self.bot.update_server(server)
-        embed = discord.Embed(description="**{0}** has been removed from the subscriptions list!".format(manga.title))
+        embed = discord.Embed(description="**{0}** has been removed from the subscriptions list!".format(manga.title), color=0x00aaff)
         await ctx.send(embed=embed)
 
     @commands.command(name="unsub",
@@ -163,7 +165,8 @@ class Core(commands.Cog):
         self.bot.update_server(server)
         embed = discord.Embed(
             title="The following members and roles have successfully unsubscribed from **[{0.title}]**".format(manga),
-            description="```\nMembers: {0}\nRoles: {1}\n```".format(", ".join(_members), ", ".join(_roles))
+            description="```\nMembers: {0}\nRoles: {1}\n```".format(", ".join(_members), ", ".join(_roles)),
+            color=0x00aaff
         )
         await ctx.send(embed=embed)
 
@@ -210,15 +213,17 @@ class Core(commands.Cog):
         else:
             lib_name = None
         results = await self.bot.search_manga(*args, lib_name=lib_name)
-        embed = discord.Embed()
+        embed = discord.Embed(color=0x00aaff)
         manga = await Pick.display(ctx, embed, results)
         if not manga:
-            raise CogError("Timeout!")
+            return
         server = self.bot.get_server(ctx.guild.id)
         if manga not in server.subscriptions:
             server.subscriptions.add(manga)
+        else:
+            raise CogError("**[{0.title}]** is already in the subscription list.".format(manga))
         self.bot.update_server(server)
-        embed = discord.Embed(description="**[{0}]** has been added to the subscriptions list!".format(manga.title))
+        embed = discord.Embed(description="**[{0}]** has been added to the subscriptions list!".format(manga.title), color=0x00aaff)
         await ctx.send(embed=embed)
 
     @commands.command(name="info",
@@ -234,8 +239,7 @@ class Core(commands.Cog):
     async def _info_command(self, ctx, reference):
         server = self.bot.get_server(ctx.guild.id)
         manga = await self.bot.get_manga(reference)
-        print(manga.__dict__)
-        embed = discord.Embed(title="[{0.origin}]  :  {0.title} [{0.id}]".format(manga))
+        embed = discord.Embed(title="[{0.origin}]  :  {0.title} [{0.id}]".format(manga), color=0x00aaff)
         embed.set_thumbnail(url=manga.cover_url)
         embed.add_field(name="Author", value=manga.author, inline=True)
         embed.add_field(name="Artist", value=manga.artist, inline=True)
@@ -259,9 +263,8 @@ class Core(commands.Cog):
         server = self.bot.get_server(ctx.guild.id)
         server.channel_id = ctx.channel.id
         self.bot.update_server(server)
-        await ctx.send("**`{0.channel}`** has been set as the update channel.\n"
-                       "Updates from subscribed manga will be posted here."
-                       .format(ctx))
+        await ctx.send(embed=discord.Embed(description="**`{0.channel}`** has been set as the update channel.\n"
+                       "Updates from subscribed manga will be posted here.".format(ctx)), color=0x00aaff)
 
     @commands.command(name="srcs",
                       usage="",
@@ -271,14 +274,14 @@ class Core(commands.Cog):
         embed = discord.Embed(title="Here all are the websites currently supported.",
                               description="Sources: {0}".format(
                                   ", ".join(("**[{0.name}]({0.url})**".format(lib) for lib in self.bot.libs))
-                              ))
+                              ), color=0x00aaff)
         await ctx.send(embed=embed)
 
     @commands.command(name="srcinfo",
                       usage="[Source Alias]",
                       description="Display basic information about a source currently supported by the bot.",
                       help="[Source Alias]\n"
-                           "#Alias of a source currently supported by the bot.\n,"
+                           "#Alias of a source currently supported by the bot.\n"
                            " \n"
                            "Example:\n"
                            "{0.prefix}srcinfo Mangadex\n"

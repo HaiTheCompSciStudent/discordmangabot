@@ -1,6 +1,6 @@
 import asyncio
 import discord
-
+from index.errors import CogError
 from contextlib import suppress
 
 LEFT_EMOJI = "\u23EE"  # [:track_previous:]
@@ -87,7 +87,8 @@ class Pick:
             try:
                 reaction, user = await ctx.bot.wait_for("reaction_add", timeout=timeout, check=event_check)
             except asyncio.TimeoutError:
-                return await message.delete()
+                await message.delete()
+                raise CogError("Timeout!")
 
             await message.remove_reaction(reaction.emoji, user)
 

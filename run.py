@@ -15,6 +15,8 @@ bot.remove_command("help")
 @bot.event
 async def on_ready():
     print("I am ready")
+    game = discord.Game("-help")
+    await bot.change_presence(activity=game)
 
 
 @bot.event
@@ -34,7 +36,7 @@ async def on_command_error(ctx, error):
         await ctx.send(embed=error.embed)
     elif isinstance(error, commands.UserInputError):
         embed = discord.Embed(color=0x00aaff,
-                              description="**Usage:** `{0.prefix}` {0.command.usage}".format(ctx))
+                              description="**Usage:** `{0.prefix}{0.command} {0.command.usage}`".format(ctx))
         await ctx.send(embed=embed)
     else:
         print(error)

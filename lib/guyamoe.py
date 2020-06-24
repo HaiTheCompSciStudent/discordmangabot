@@ -31,9 +31,8 @@ class GuyaMoe(Library):
 
         class MangaFactory(Manga, settings=manga):
 
-            def __init__(self, slug, *, data):
-                self.slug = slug
-                id = SLUG_ID_TABLE.get(self.slug)
+            def __init__(self, id, *, data):
+                self.slug = ID_SLUG_TABLE.get(id)
                 super().__init__(id, data=data)
 
             @property
@@ -76,11 +75,11 @@ class GuyaMoe(Library):
         data = await resp.json()
         # Sort by the second item (value) in the key-value pair first entry in the 'release date' key
         for _chapter, _data in sorted(data["chapters"].items(),
-                                      key=lambda p: next(p[1].get("release_date").values()),
+                                      key=lambda p: next(iter(p[1].get("release_date").values())),
                                       reverse=True):
             _data["id"] = "{0}/{1}/1".format(slug, _chapter)
             _data["chapter"] = _chapter
-            _data["timestamp"] = next(_data.pop("release_date").values())
+            _data["timestamp"] = next(iter(_data.pop("release_date").values()))
             _data["lang_code"] = "gb"
             yield self.chapter_factory(_data["id"], data=_data)
 
@@ -94,7 +93,7 @@ class GuyaMoe(Library):
             if i >= max_results:
                 break
             if any((key.lower() in title.lower() for key in args)):
-                yield await self.fetch_manga(manga["slug"])
+                yield await self.fetch_manga(SLUG_ID_TABLE.get(manga["slug"]))
 
     @classmethod
     async def recreate(cls, bot):

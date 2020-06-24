@@ -102,6 +102,7 @@ class Index(commands.Bot):
                         continue
                     else:
                         self.dataio.insert("test_manga", manga.serialized)
+                        print("Yes")
                         return manga
         raise BotError("Can't find any manga with the reference specified.")
 

@@ -11,7 +11,7 @@ class General(commands.Cog):
                       usage="[Prefix]",
                       description="Changes the prefix.",
                       help="[Prefix]\n"
-                           "Prefix to be changed to."
+                           "Prefix to be changed to.\n"
                            "Example:\n"
                            "{0.prefix}prefix m!\n"
                            "#Changes the prefix to 'm!'.")
@@ -42,10 +42,10 @@ class General(commands.Cog):
                       usage="[Command]",
                       description="Displays detailed help about a specific command or provides general help.",
                       help="[Command]\n"
-                           "#Command you want detailed help on, can be left blank to show general help."
+                           "#Command you want detailed help on, can be left blank to show general help.\n"
                            " \n"
                            "Example:\n"
-                           "{0.prefix}help sub"
+                           "{0.prefix}help sub\n"
                            "#Shows detailed help on the command 'sub'.")
     async def _help_command(self, ctx, command_name=None):
         if command_name:
