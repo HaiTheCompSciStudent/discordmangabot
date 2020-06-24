@@ -21,12 +21,12 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    bot.dataio.insert("test_guilds", Server(data={"id": guild.id}))
+    bot.dataio.insert("test_guilds", Server(data={"id": guild.id}).serialized)
 
 
 @bot.event
 async def on_guild_remove(guild):
-    bot.dataio.remove("test_guilds", guild.id)
+    bot.dataio.delete("test_guilds", guild.id)
 
 
 @bot.event
