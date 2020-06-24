@@ -14,7 +14,7 @@ class Subscription:
 
     @property
     def mentions(self):
-        return [*["<@{0}>".format(member) for member in self.members], *["<&{0}>".format(role) for role in self.roles]]
+        return [*["<@!{0}>".format(member) for member in self.members], *["<@&{0}>".format(role) for role in self.roles]]
 
     @property
     def serialized(self):
