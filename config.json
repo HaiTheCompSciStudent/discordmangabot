@@ -43,7 +43,7 @@
       },
       "chapter": {
         "ORIGIN": "Guyamoe",
-        "PAGE_BASE": "https://guya.moe/series/{0}"
+        "PAGE_BASE": "https://guya.moe/read/manga/{0}"
       }
     }
   }
