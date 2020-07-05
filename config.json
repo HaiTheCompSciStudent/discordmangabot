@@ -1,0 +1,50 @@
+{
+  "MONGO_URI": "mongodb+srv://tokubetsu:wPcpAfTxol@mangacluster-sidp0.gcp.mongodb.net/test?retryWrites=true&w=majority",
+  "BOT_TOKEN": "NjU1ODA0MjcyNjcxNDU3MzE2.XvQcuA.1tmsFr5fexlVleUcaWq164FsV6M",
+  "DBL_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1NTgwNDI3MjY3MTQ1NzMxNiIsImJvdCI6dHJ1ZSwiaWF0IjoxNTgyNjg5ODc0fQ.lF6a-MbxVnPPaYIlNKIMmwXUDRsSDOaLQrw6wXYjxes",
+  "feedback_channel": 430339840224264204,
+  "LIBRARIES": {
+    "mangadex": {
+      "name": "Mangadex",
+      "aliases": [
+        "md", "default"
+      ],
+      "url": "https://mangadex.org",
+      "icon_url": "https://mangadex.org/images/misc/default_brand.png?1",
+      "credentials": [
+        "haimangabot",
+        "e%Z@CppazqC!2nF{"
+      ],
+      "manga": {
+        "ORIGIN": "Mangadex",
+        "PAGE_BASE": "https://mangadex.org/title/{0}",
+        "COVER_BASE": "https://mangadex.org/{0}"
+      },
+      "chapter": {
+        "ORIGIN": "Mangadex",
+        "PAGE_BASE": "https://mangadex.org/chapter/{0}"
+      },
+      "description": "A website that aggregates scanlated chapters for many manga from many different scanlation groups.\nIt is the default website that the bot use when fetching manga information.",
+      "explanation": "Reference type allowed:\n#[Manga URL], [Manga ID]\n \nExample:\n#{0.prefix}sub 39 @member @role\n#{0.prefix}sub https://mangadex.org/title/39/One-Piece @member @role\n#Subscribes @member and @role to [One Piece]"
+    },
+    "guyamoe": {
+      "name": "Guya.moe",
+      "url": "https://guya.moe",
+      "icon_url": "https://guya.moe/static/logo.png?v=0ef06f1",
+      "explanation": "Reference type allowed:\n#[Manga URL], [Manga ID], [URL Slug]\n \nExample:\n#{0.prefix}sub gm1 @member @role\n#{0.prefix}sub https://guya.moe/read/manga/Kaguya-Wants-To-Be-Confessed-To/ @member @role\n#{0.prefix}sub Kaguya-Wants-To-Be-Confessed-To @member @role\n#Subscribes @member and @role to [Kaguya-sama: Love is War]",
+      "description": "A website that host high-quality english scanlated chapters for Kaguya-sama related content.\nAn ID table shown below represents the manga hosted on the website\n```\n[gm1] : Kaguya-sama: Love is War\n[gm2] : Kaguya Wants To Be Confessed To Official Doujin\n[gm3] : We Want To Talk About Kaguya\n```\n",
+      "aliases": [
+        "gm", "guya", "guyamoe"
+      ],
+      "manga": {
+        "ORIGIN": "Guyamoe",
+        "PAGE_BASE": "https://guya.moe/read/manga/{0}",
+        "COVER_BASE": "https://guya.moe{0}"
+      },
+      "chapter": {
+        "ORIGIN": "Guyamoe",
+        "PAGE_BASE": "https://guya.moe/read/manga/{0}"
+      }
+    }
+  }
+}
